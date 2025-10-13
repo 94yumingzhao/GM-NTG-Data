@@ -1,4 +1,6 @@
 #include "case_generator.h"
+#include "logger.h"
+#include "demand_generator.h"
 #include <iostream>
 #include <chrono>
 #include <iomanip>
@@ -16,27 +18,38 @@
  */
 
 int main() {
+    Logger logger;
+
     try {
+        logger.log("==================== LS-Game-DataGen 启动 ====================");
         // ==================== 基本规模参数 ====================
-        int U = 2;    // 节点数量
-        int I = 2;    // 物品种类数量
-        int T = 3;    // 时间周期数量
+        int U = 5;    // 节点数量
+        int I = 300;    // 物品种类数量
+        int T = 20;    // 时间周期数量
 
         // 是否启用转运功能
         bool enable_transfer = false;
 
         // ==================== 单位成本参数 ====================
-        double unit_cX = 2.0;    // X方向生产成本（统一值）
-        double unit_cY = 5.0;    // Y方向生产成本（统一值）
-        double unit_cI = 0.4;    // 库存持有成本（统一值）
+        double unit_cX = 1.0;    // X方向生产成本（统一值）
+        double unit_cY = 60.0;    // Y方向生产成本（统一值）
+        double unit_cI = 1.0;    // 库存持有成本（统一值）
 
         // ==================== 单位产能占用参数 ====================
         double unit_sX = 1.0;    // X方向产能占用（统一值）
         double unit_sY = 0.0;    // Y方向产能占用（统一值）
 
         // ==================== 默认值 ====================
-        double default_capacity = 5.0;    // 默认产能
+        double default_capacity = 1440;    // 默认产能
         double default_i0 = 0.0;          // 默认初始库存
+
+        // ==================== 需求生成参数 ====================
+        double min_demand = 10.0;         // 最小需求量
+        double max_demand = 100.0;        // 最大需求量
+        double demand_density = 0.3;      // 需求密度（0.0-1.0）
+        unsigned int demand_seed = 42;    // 随机种子
+
+        DemandGenConfig::Mode demand_mode = DemandGenConfig::Mode::PER_ITEM_PER_TIME;
 
         // ==================== 求解器参数 ====================
         double mip_gap = 1e-6;            // MIP 求解间隙
@@ -72,11 +85,25 @@ int main() {
         // gc.i0_overrides.push_back({0, 0, 5.0});  // 节点0，物品0，初始库存5.0
 
         // ==================== 需求配置 ====================
-        // 格式：{节点u, 物品i, 时间t, 需求量}
+        // 自动生成需求
+        DemandGenConfig demand_config;
+        demand_config.U = U;
+        demand_config.I = I;
+        demand_config.T = T;
+        demand_config.min_demand = min_demand;
+        demand_config.max_demand = max_demand;
+        demand_config.density = demand_density;
+        demand_config.random_seed = demand_seed;
+        demand_config.mode = demand_mode;
 
-        gc.demand.push_back({0, 0, 0, 10.0});
-        gc.demand.push_back({0, 1, 1, 15.0});
-        gc.demand.push_back({1, 0, 2, 8.0});
+        logger.log("生成需求数据...");
+        logger.log("需求生成模式: " + DemandGenerator::GetModeName(demand_mode));
+        logger.log("需求量范围: [" + std::to_string(min_demand) + ", " + std::to_string(max_demand) + "]");
+        logger.log("需求密度: " + std::to_string(demand_density));
+
+        gc.demand = DemandGenerator::Generate(demand_config);
+
+        logger.log("生成需求数量: " + std::to_string(gc.demand.size()));
 
         // ==================== 转运配置（仅当 enable_transfer=true 时需要）====================
         // 转运成本格式：{源节点u, 目标节点v, 物品i, 时间t, 成本}
@@ -113,17 +140,25 @@ int main() {
 
         std::string output_file = filename.str();
 
+        logger.log("开始生成算例...");
+        logger.log("配置: U=" + std::to_string(gc.U) +
+                   ", I=" + std::to_string(gc.I) +
+                   ", T=" + std::to_string(gc.T));
+        logger.log("转运功能: " + std::string(gc.enable_transfer ? "启用" : "未启用"));
+
         CsvWriter writer(output_file);
         CaseGenerator::GenerateCsv(gc, writer);
 
-        std::cout << "算例生成成功!\n";
-        std::cout << "输出文件: " << output_file << "\n";
-        std::cout << "规模: U=" << gc.U << ", I=" << gc.I << ", T=" << gc.T << "\n";
-        std::cout << "转运功能: " << (gc.enable_transfer ? "启用" : "未启用") << "\n";
+        logger.log("算例生成成功!");
+        logger.log("输出文件: " + output_file);
+        logger.log("==================== LS-Game-DataGen 完成 ====================");
+
+        logger.saveToFile();
 
         return 0;
     } catch (const std::exception& ex) {
-        std::cerr << "[错误] " << ex.what() << "\n";
+        logger.log("[错误] " + std::string(ex.what()));
+        logger.saveToFile();
         return 1;
     }
 }

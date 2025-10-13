@@ -62,6 +62,8 @@ set(SOURCES
 set(HEADERS
     ${SRC_DIR}/case_generator.h
     ${SRC_DIR}/csv_writer.h
+    ${SRC_DIR}/logger.h
+    ${SRC_DIR}/demand_generator.h
 )
 
 # Force all files to be at the same level in IDE
