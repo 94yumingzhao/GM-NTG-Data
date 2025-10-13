@@ -43,6 +43,7 @@
 #include <chrono>
 #include <iomanip>
 #include <sstream>
+#include <fstream>
 
 /**
  * @brief 主函数 - 程序入口点
@@ -336,9 +337,35 @@ int main() {
         std::tm tm_now;
         localtime_s(&tm_now, &time_t_now);  // 转换为本地时间（线程安全版本）
 
+        // 获取项目根目录路径（向上查找包含CMakeLists.txt的目录）
+        std::string project_root = "";
+        std::string current_dir = ".";
+        for (int i = 0; i < 5; ++i) {  // 最多向上查找5级目录
+            std::ifstream cmake_file(current_dir + "/CMakeLists.txt");
+            if (cmake_file.good()) {
+                project_root = current_dir;
+                break;
+            }
+            current_dir = "../" + current_dir;
+        }
+        
+        // 如果没找到，使用当前目录
+        if (project_root.empty()) {
+            project_root = ".";
+        }
+        
+        std::string output_dir = project_root + "/output";
+        
+        // 确保output目录存在
+        #ifdef _WIN32
+            system(("if not exist \"" + output_dir + "\" mkdir \"" + output_dir + "\"").c_str());
+        #else
+            system(("mkdir -p \"" + output_dir + "\"").c_str());
+        #endif
+
         // 构建文件名字符串
         std::ostringstream filename;
-        filename << "output/case_"
+        filename << output_dir << "/case_"
                  << std::setfill('0')  // 使用0填充
                  << std::setw(4) << (tm_now.tm_year + 1900)  // 年份（4位）
                  << std::setw(2) << (tm_now.tm_mon + 1)      // 月份（2位，注意+1）

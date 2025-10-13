@@ -114,21 +114,22 @@ private:
     /**
      * @brief 生成日志文件名（用于文件保存）
      *
-     * @return std::string 日志文件名 "output/log_YYYYMMDD_HHMMSS.txt"
+     * @param output_dir 输出目录路径
+     * @return std::string 日志文件名 "output_dir/log_YYYYMMDD_HHMMSS.txt"
      *
      * @details
      * 文件名格式：
-     * - 目录：output/
+     * - 目录：指定的output_dir
      * - 前缀：log_
      * - 日期：YYYYMMDD（8位数字）
      * - 时间：HHMMSS（6位数字）
      * - 后缀：.txt
      *
-     * 示例输出：output/log_20251013_173045.txt
+     * 示例输出：D:/LS-Game-DataGen/output/log_20251013_173045.txt
      *
      * @note 在构造函数中调用，确保每个Logger实例有唯一的文件名
      */
-    static std::string generateLogFilename() {
+    static std::string generateLogFilename(const std::string& output_dir) {
         // 获取当前系统时间
         auto now = std::chrono::system_clock::now();
         auto time_t_now = std::chrono::system_clock::to_time_t(now);
@@ -139,7 +140,7 @@ private:
 
         // 构建文件名
         std::ostringstream oss;
-        oss << "output/log_"
+        oss << output_dir << "/log_"
             << std::setfill('0')
             << std::setw(4) << (tm_now.tm_year + 1900)  // 年份
             << std::setw(2) << (tm_now.tm_mon + 1)      // 月份
@@ -161,7 +162,33 @@ public:
      * 文件会在调用 saveToFile() 时创建和写入。
      */
     Logger() {
-        log_filename = generateLogFilename();
+        // 获取项目根目录路径（向上查找包含CMakeLists.txt的目录）
+        std::string project_root = "";
+        std::string current_dir = ".";
+        for (int i = 0; i < 5; ++i) {  // 最多向上查找5级目录
+            std::ifstream cmake_file(current_dir + "/CMakeLists.txt");
+            if (cmake_file.good()) {
+                project_root = current_dir;
+                break;
+            }
+            current_dir = "../" + current_dir;
+        }
+        
+        // 如果没找到，使用当前目录
+        if (project_root.empty()) {
+            project_root = ".";
+        }
+        
+        std::string output_dir = project_root + "/output";
+        
+        // 确保output目录存在
+        #ifdef _WIN32
+            system(("if not exist \"" + output_dir + "\" mkdir \"" + output_dir + "\"").c_str());
+        #else
+            system(("mkdir -p \"" + output_dir + "\"").c_str());
+        #endif
+        
+        log_filename = generateLogFilename(output_dir);
     }
 
     /**
