@@ -19,7 +19,7 @@
  *
  * CSV输出格式：
  * section,key,u,v,i,t,value
- * - section: 数据段名称（meta/cost/cap_usage/capacity/init/demand/transfer/bigM/solver）
+ * - section: 数据段名称（meta/cost/cap_usage/capacity/init/demand/transfer/bigM）
  * - key: 数据键名（如U, I, T, cX, cY等）
  * - u,v,i,t: 索引（不适用时为空）
  * - value: 数据值
@@ -91,12 +91,10 @@ static std::string quad(int a, int b, int c, int d) {
  * 2. 成本向量长度（cX, cY, cI长度必须等于I）
  * 3. 产能占用向量长度（sX, sY长度必须等于I）
  * 4. 默认值合法性（产能和初始库存必须非负）
- * 5. 求解器参数合法性
- * 6. 需求数据索引和值的合法性
- * 7. 产能覆盖数据的合法性
- * 8. 初始库存覆盖数据的合法性
- * 9. 转运配置的合法性（如果启用）
- * 10. BigM配置的合法性（如果启用）
+ * 5. 需求数据索引和值的合法性
+ * 6. 产能覆盖数据的合法性
+ * 7. 初始库存覆盖数据的合法性
+ * 8. 转运配置的合法性（如果启用）
  */
 void CaseGenerator::Validate(const GeneratorConfig& g) {
     // ================================================================================
@@ -127,14 +125,7 @@ void CaseGenerator::Validate(const GeneratorConfig& g) {
     CHECK(g.default_i0 >= 0.0, "default_i0 需为非负");
 
     // ================================================================================
-    // 5. 验证求解器参数
-    // ================================================================================
-    CHECK(g.mip_gap >= 0.0, "mip_gap 非负");
-    CHECK(g.time_limit_sec > 0, "time_limit_sec 必须 > 0");
-    CHECK(g.max_iters > 0, "max_iters 必须 > 0");
-
-    // ================================================================================
-    // 6. 验证需求数据
+    // 5. 验证需求数据
     // ================================================================================
     // 检查每个需求点的索引和值是否合法
     for (const auto& d : g.demand) {
@@ -145,7 +136,7 @@ void CaseGenerator::Validate(const GeneratorConfig& g) {
     }
 
     // ================================================================================
-    // 7. 验证产能覆盖数据
+    // 6. 验证产能覆盖数据
     // ================================================================================
     // 检查每个产能覆盖项的索引和值是否合法
     for (const auto& c : g.capacity_overrides) {
@@ -155,7 +146,7 @@ void CaseGenerator::Validate(const GeneratorConfig& g) {
     }
 
     // ================================================================================
-    // 8. 验证初始库存覆盖数据
+    // 7. 验证初始库存覆盖数据
     // ================================================================================
     // 检查每个初始库存覆盖项的索引和值是否合法
     for (const auto& z : g.i0_overrides) {
@@ -165,7 +156,7 @@ void CaseGenerator::Validate(const GeneratorConfig& g) {
     }
 
     // ================================================================================
-    // 9. 验证转运相关配置
+    // 8. 验证转运相关配置
     // ================================================================================
     if (g.enable_transfer) {
         // 当启用转运功能时，验证转运成本数据
@@ -234,14 +225,8 @@ void CaseGenerator::Validate(const GeneratorConfig& g) {
  * 8. bigM段 - BigM约束（可选，仅当enable_transfer=true）
  *    - M[i,t]: 物品i在时间t的BigM值
  *
- * 9. solver段 - 求解器参数
- *    - mip_gap: MIP求解间隙
- *    - time_limit_sec: 时间限制
- *    - threads: 线程数
- *    - sep_violation_eps: 分离违反阈值
- *    - max_iters: 最大迭代次数
- *
  * @note 在写入数据前会自动调用Validate()验证配置的合法性
+ * @note 求解器参数不再在CSV中生成，由求解器项目自行配置
  */
 void CaseGenerator::GenerateCsv(const GeneratorConfig& g, CsvWriter& w) {
     // 首先验证配置的合法性
@@ -315,13 +300,4 @@ void CaseGenerator::GenerateCsv(const GeneratorConfig& g, CsvWriter& w) {
         for (const auto& m : g.bigM)
             w.writeRow("bigM", "M", -1, -1, m.i, m.t, m.M);
     }
-
-    // ================================================================================
-    // 8. 写出 solver 段 - 求解器参数
-    // ================================================================================
-    w.writeRow("solver", "mip_gap",           -1, -1, -1, -1, g.mip_gap);
-    w.writeRow("solver", "time_limit_sec",    -1, -1, -1, -1, g.time_limit_sec);
-    w.writeRow("solver", "threads",           -1, -1, -1, -1, g.threads);
-    w.writeRow("solver", "sep_violation_eps", -1, -1, -1, -1, g.sep_violation_eps);
-    w.writeRow("solver", "max_iters",         -1, -1, -1, -1, g.max_iters);
 }

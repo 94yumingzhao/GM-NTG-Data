@@ -179,15 +179,6 @@ struct GeneratorConfig {
 
     std::vector<BigMEntry> bigM;                // BigM约束列表
                                                 // M[i,t] 表示BigM值
-
-    // ================================================================================
-    // 求解器参数
-    // ================================================================================
-    double mip_gap = 1e-6;           // MIP求解间隙（相对误差容忍度）
-    int time_limit_sec = 60;         // 时间限制（秒）
-    int threads = 0;                 // 并行线程数（0=自动）
-    double sep_violation_eps = 1e-8; // 分离违反阈值（用于割平面）
-    int max_iters = 50;              // 最大迭代次数
 };
 
 // ====================================================================================
@@ -247,9 +238,9 @@ public:
      * 6. demand    - 需求数据（稀疏表示）
      * 7. transfer  - 转运数据（可选，仅当enable_transfer=true）
      * 8. bigM      - BigM约束（可选，仅当enable_transfer=true）
-     * 9. solver    - 求解器参数
      *
      * @note 生成前会自动调用Validate()验证配置
+     * @note 求解器参数由求解器项目自行配置，不在CSV中生成
      */
     static void GenerateCsv(const GeneratorConfig& gc, CsvWriter& w);
 };
