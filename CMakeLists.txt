@@ -6,8 +6,8 @@ cmake_minimum_required(VERSION 3.24)
 
 # Define project name, version, and languages used
 project(LSGameDataGen
-    VERSION 1.0.0
-    DESCRIPTION "Lot Sizing Game Data Generator"
+    VERSION 2.0.0
+    DESCRIPTION "Lot Sizing Game Data Generator - Capacity-Driven Generation"
     LANGUAGES CXX
 )
 
@@ -56,6 +56,7 @@ set(SOURCES
     ${SRC_DIR}/main.cpp
     ${SRC_DIR}/case_generator.cpp
     ${SRC_DIR}/csv_writer.cpp
+    ${SRC_DIR}/demand_generator.cpp
 )
 
 # Define header files (for IDE display)
@@ -64,50 +65,29 @@ set(HEADERS
     ${SRC_DIR}/csv_writer.h
     ${SRC_DIR}/logger.h
     ${SRC_DIR}/demand_generator.h
-    ${SRC_DIR}/demand_generator_v2.h
-)
-
-# Define source files for v2 (using new generator)
-set(SOURCES_V2
-    ${SRC_DIR}/main_v2.cpp
-    ${SRC_DIR}/case_generator.cpp
-    ${SRC_DIR}/csv_writer.cpp
 )
 
 # Force all files to be at the same level in IDE
 source_group("Source Files" FILES ${SOURCES})
 source_group("Header Files" FILES ${HEADERS})
 
-# Create executable for v1
+# Create executable
 add_executable(LSGameDataGen ${SOURCES} ${HEADERS})
-
-# Create executable for v2
-add_executable(LSGameDataGenV2 ${SOURCES_V2} ${HEADERS})
 
 # Set target properties
 set_target_properties(LSGameDataGen PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/$<CONFIG>"
 )
 
-set_target_properties(LSGameDataGenV2 PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/$<CONFIG>"
-)
-
 # Add compile definitions
 target_compile_definitions(LSGameDataGen PRIVATE
-    DATAGEN_VERSION="1.0"
-    DATAGEN_VERSION_MAJOR=1
-    DATAGEN_VERSION_MINOR=0
-)
-
-target_compile_definitions(LSGameDataGenV2 PRIVATE
     DATAGEN_VERSION="2.0"
     DATAGEN_VERSION_MAJOR=2
     DATAGEN_VERSION_MINOR=0
 )
 
 # Installation rules
-install(TARGETS LSGameDataGen LSGameDataGenV2
+install(TARGETS LSGameDataGen
     RUNTIME DESTINATION bin
 )
 
