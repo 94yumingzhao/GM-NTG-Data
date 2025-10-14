@@ -66,7 +66,7 @@ int main() {
                         // 表示规划的时间跨度
                         // 取值范围：正整数，通常为 10-50
 
-        bool enable_transfer = false;  // 是否启用节点间转运功能
+        bool enable_transfer = true;  // 是否启用节点间转运功能
                                       // false: 不允许转运（简化问题）
                                       // true: 允许转运（增加复杂度）
 
