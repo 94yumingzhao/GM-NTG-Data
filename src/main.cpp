@@ -150,10 +150,10 @@ int main() {
         // ====================================================================================
         // 需求是批量大小问题的输入，决定了生产计划的目标
 
-        double min_demand = 50.0;        // 最小需求量（单位：件）
+        double min_demand = 10.0;        // 最小需求量（单位：件）
                                         // 每个需求点的需求量下限
 
-        double max_demand = 200.0;       // 最大需求量（单位：件）
+        double max_demand = 20.0;       // 最大需求量（单位：件）
                                         // 每个需求点的需求量上限
                                         // 实际需求量将在 [min_demand, max_demand] 范围内随机生成
 
@@ -162,7 +162,7 @@ int main() {
                                         // 0.15 表示只有15%的组合有需求（稀疏需求）
                                         // 1.0 表示所有组合都有需求（密集需求）
 
-        double capacity_tightness = 1.1; // 产能紧张度（取值范围：>0）
+        double capacity_tightness = 0.8; // 产能紧张度（取值范围：>0）
                                         // 影响需求与产能的关系
                                         // >1.0: 某些时段需求可能超过产能（紧张）
                                         // <1.0: 产能充足（宽松）
@@ -280,6 +280,9 @@ int main() {
         demand_config.min_demand = min_demand;
         demand_config.max_demand = max_demand;
         demand_config.density = demand_density;
+        demand_config.default_capacity = default_capacity;    // 新增：产能参数
+        demand_config.unit_sX = unit_sX;                      // 新增：产能占用参数
+        demand_config.unit_sY = unit_sY;                      // 新增：启动占用参数
         demand_config.capacity_tightness = capacity_tightness;
         demand_config.demand_concentration = demand_concentration;
         demand_config.random_seed = demand_seed;

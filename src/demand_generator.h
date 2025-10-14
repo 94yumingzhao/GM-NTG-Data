@@ -92,11 +92,23 @@ struct DemandGenConfig {
     // ================================================================================
     // 产能相关参数
     // ================================================================================
+    double default_capacity = 1440.0;  ///< 每节点每时段的默认产能
+                                      ///  用于计算总产能约束
+                                      ///  单位：时间单位（如分钟、小时）
+
+    double unit_sX = 1.0;             ///< 单位产品的产能占用
+                                     ///  表示生产1单位产品消耗的产能
+                                     ///  用于将产能转换为产品数量
+
+    double unit_sY = 0.0;             ///< 单位启动的产能占用
+                                     ///  表示启动生产1种产品消耗的产能
+                                     ///  用于计算启动成本对产能的影响
+
     double capacity_tightness = 0.8;  ///< 产能紧张度（取值范围：>0）
-                                     ///  影响需求与产能的关系
-                                     ///  <1.0: 产能充足（宽松）
+                                     ///  定义：总需求 = (总产能 / unit_sX) * capacity_tightness
+                                     ///  <1.0: 产能充足（宽松），总需求小于总产能
                                      ///  =1.0: 需求与产能基本平衡
-                                     ///  >1.0: 某些时段需求超产能（紧张）
+                                     ///  >1.0: 产能紧张，总需求超过总产能（需要库存策略）
 
     double time_window_tightness = 0.3;  ///< 时间窗口紧张度（保留参数，暂未使用）
                                         ///  未来可用于控制交期约束的紧张程度
@@ -313,7 +325,34 @@ public:
             // 模式5：产能感知（推荐）
             // ========================================================================
             case DemandGenConfig::Mode::CAPACITY_AWARE: {
-                // 步骤1：为每个时段生成负载系数
+                // 步骤1：计算总产能和目标总需求
+                // 总产能 = 节点数 × 时间段数 × 每节点每时段产能
+                double total_capacity = config.U * config.T * config.default_capacity;
+
+                // 步骤2：计算需求条目数量
+                int total_demands = static_cast<int>(config.U * config.I * config.T * config.density);
+
+                // 步骤3：估算启动占用的产能
+                // 平均每个节点每个时段需要启动的产品种类数
+                double avg_startups_per_node_per_time = config.I * config.density;
+                // 启动总占用产能
+                double total_startup_capacity = config.U * config.T * avg_startups_per_node_per_time * config.unit_sY;
+                // 剩余可用于生产的产能
+                double available_production_capacity = total_capacity - total_startup_capacity;
+
+                // 步骤4：计算目标总需求（基于剩余产能）
+                // 目标总需求 = (可用生产产能 / 产能占用) × 产能紧张度
+                double target_total_demand = (available_production_capacity / config.unit_sX) * config.capacity_tightness;
+
+                // 步骤5：计算期望的平均需求量
+                double expected_avg_demand = target_total_demand / total_demands;
+
+                // 步骤6：根据期望均值调整需求范围（均值附近±50%）
+                double adjusted_min = expected_avg_demand * 0.5;
+                double adjusted_max = expected_avg_demand * 1.5;
+                std::uniform_real_distribution<double> adjusted_amount_dist(adjusted_min, adjusted_max);
+
+                // 步骤7：为每个时段生成负载系数（用于时间分布）
                 std::vector<double> period_load(config.T, 0.0);
                 std::uniform_real_distribution<double> load_dist(0.5, 1.5);
 
@@ -321,7 +360,7 @@ public:
                     period_load[t] = load_dist(rng);
                 }
 
-                // 步骤2：归一化为概率分布
+                // 步骤8：归一化为概率分布
                 double total_load = 0.0;
                 for (double load : period_load) {
                     total_load += load;
@@ -330,17 +369,14 @@ public:
                     period_load[t] /= total_load;
                 }
 
-                // 步骤3：计算总需求数量
-                int total_demands = static_cast<int>(config.U * config.I * config.T * config.density);
-
-                // 步骤4：确定需求集中的时段
+                // 步骤9：确定需求集中的时段
                 std::vector<int> concentrated_periods;
                 int num_concentrated = std::max(1, static_cast<int>(config.T * config.demand_concentration));
                 for (int i = 0; i < num_concentrated; ++i) {
                     concentrated_periods.push_back(rng() % config.T);
                 }
 
-                // 步骤5：生成每个需求
+                // 步骤10：生成每个需求
                 for (int idx = 0; idx < total_demands; ++idx) {
                     // 随机选择节点和物品
                     int u = rng() % config.U;
@@ -357,10 +393,13 @@ public:
                         t = time_dist(rng);
                     }
 
-                    // 根据时间负载和紧张度调整需求量
-                    double base_amount = amount_dist(rng);
-                    double tightness_factor = 1.0 + config.capacity_tightness * period_load[t];
-                    double final_amount = base_amount * tightness_factor;
+                    // 生成需求量（在期望均值附近随机）
+                    double base_amount = adjusted_amount_dist(rng);
+
+                    // 根据时间负载进行微调（±20%）
+                    // period_load[t] 平均为 1/T，乘以T归一化到1附近
+                    double load_factor = 1.0 + 0.2 * (period_load[t] * config.T - 1.0);
+                    double final_amount = base_amount * load_factor;
 
                     demands.push_back({u, i, t, final_amount});
                 }

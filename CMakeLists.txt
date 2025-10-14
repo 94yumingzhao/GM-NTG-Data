@@ -64,17 +64,32 @@ set(HEADERS
     ${SRC_DIR}/csv_writer.h
     ${SRC_DIR}/logger.h
     ${SRC_DIR}/demand_generator.h
+    ${SRC_DIR}/demand_generator_v2.h
+)
+
+# Define source files for v2 (using new generator)
+set(SOURCES_V2
+    ${SRC_DIR}/main_v2.cpp
+    ${SRC_DIR}/case_generator.cpp
+    ${SRC_DIR}/csv_writer.cpp
 )
 
 # Force all files to be at the same level in IDE
 source_group("Source Files" FILES ${SOURCES})
 source_group("Header Files" FILES ${HEADERS})
 
-# Create executable
+# Create executable for v1
 add_executable(LSGameDataGen ${SOURCES} ${HEADERS})
+
+# Create executable for v2
+add_executable(LSGameDataGenV2 ${SOURCES_V2} ${HEADERS})
 
 # Set target properties
 set_target_properties(LSGameDataGen PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/$<CONFIG>"
+)
+
+set_target_properties(LSGameDataGenV2 PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/$<CONFIG>"
 )
 
@@ -85,8 +100,14 @@ target_compile_definitions(LSGameDataGen PRIVATE
     DATAGEN_VERSION_MINOR=0
 )
 
+target_compile_definitions(LSGameDataGenV2 PRIVATE
+    DATAGEN_VERSION="2.0"
+    DATAGEN_VERSION_MAJOR=2
+    DATAGEN_VERSION_MINOR=0
+)
+
 # Installation rules
-install(TARGETS LSGameDataGen
+install(TARGETS LSGameDataGen LSGameDataGenV2
     RUNTIME DESTINATION bin
 )
 
