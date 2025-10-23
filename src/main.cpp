@@ -62,6 +62,11 @@ int main() {
                         // 表示需要生产的不同物品种类
                         // 取值范围：正整数，通常为 50-500
 
+        int G = 30;     // 物品族数量
+                        // 表示物品分为多少个族（每个族共享setup决策）
+                        // 取值范围：正整数，通常为 I/10 到 I/5
+                        // 例如：300个物品可以分为30个族
+
         int T = 20;     // 时间周期数量
                         // 表示规划的时间跨度
                         // 取值范围：正整数，通常为 10-50
@@ -169,10 +174,20 @@ int main() {
         GeneratorConfig gc;
         gc.U = U;
         gc.I = I;
+        gc.G = G;
         gc.T = T;
         gc.enable_transfer = enable_transfer;
 
+        // 初始化物品-族关联矩阵 h_ig
+        // 策略：将物品均匀分配到各个族
+        gc.h_ig.assign(I * G, 0);
+        for (int i = 0; i < I; ++i) {
+            int assigned_family = i % G;  // 简单策略：物品i分配到族(i % G)
+            gc.h_ig[i * G + assigned_family] = 1;
+        }
+
         // 填充成本向量
+        // 注意：cY 和 sY 现在是按族而非按物品
         if (use_varied_costs) {
             std::mt19937 cost_rng(demand_seed + 1000);
             std::uniform_real_distribution<double> cY_dist(cY_min, cY_max);
@@ -180,27 +195,33 @@ int main() {
 
             gc.cX.assign(I, unit_cX);
 
-            for (int i = 0; i < I; ++i) {
+            // cY 按族生成
+            for (int g = 0; g < G; ++g) {
                 gc.cY.push_back(cY_dist(cost_rng));
+            }
+
+            // cI 按物品生成
+            for (int i = 0; i < I; ++i) {
                 gc.cI.push_back(cI_dist(cost_rng));
             }
         } else {
             gc.cX.assign(I, unit_cX);
-            gc.cY.assign(I, unit_cY);
+            gc.cY.assign(G, unit_cY);  // 注意：按族分配
             gc.cI.assign(I, unit_cI);
         }
 
         // 填充产能占用向量
         gc.sX.assign(I, unit_sX);
-        gc.sY.assign(I, unit_sY);
+        gc.sY.assign(G, unit_sY);  // 注意：按族分配
 
         // 设置默认值
         gc.default_capacity = default_capacity;
 
         // 根据initial_inventory_ratio计算初始库存
         // 需要先估算平均需求量
+        // 注意：setup overhead 现在按族计算
         double total_capacity = U * T * default_capacity;
-        double estimated_setup_overhead = U * T * I * demand_intensity * unit_sY;
+        double estimated_setup_overhead = U * T * G * demand_intensity * unit_sY;
         double available_production_capacity = total_capacity - estimated_setup_overhead;
         double estimated_total_demand = available_production_capacity * capacity_utilization / unit_sX;
         int estimated_demand_points = static_cast<int>(U * I * T * demand_intensity);
@@ -234,7 +255,8 @@ int main() {
 
         // 记录配置参数到日志
         logger.log("配置参数：");
-        logger.log("  规模: U=" + std::to_string(U) + ", I=" + std::to_string(I) + ", T=" + std::to_string(T));
+        logger.log("  规模: U=" + std::to_string(U) + ", I=" + std::to_string(I) +
+                   ", G=" + std::to_string(G) + ", T=" + std::to_string(T));
         logger.log("  产能: default=" + std::to_string(default_capacity) +
                    ", sX=" + std::to_string(unit_sX) +
                    ", sY=" + std::to_string(unit_sY));
