@@ -58,14 +58,14 @@ int main() {
                         // 表示供应链网络中的节点数量
                         // 取值范围：正整数，通常为 3-10
 
-        int I = 100;     // 物品种类数量（S1规模 - 从30调整到20）
+        int N = 100;     // 物品种类数量（S1规模 - 从30调整到20）
                         // 表示需要生产的不同物品种类
                         // 取值范围：正整数，通常为 50-500
                         // 调整原因：适配60秒求解时间限制
 
         int G = 4;      // 物品族数量（S1规模 - 从3调整到2）
                         // 表示物品分为多少个族（每个族共享setup决策）
-                        // 取值范围：正整数，通常为 I/10 到 I/5
+                        // 取值范围：正整数，通常为 N/10 到 N/5
                         // 例如：20个物品分为2个族
 
         int T = 30;     // 时间周期数量（S1规模 - 从20调整到15）
@@ -175,15 +175,15 @@ int main() {
         // 构建算例生成配置
         GeneratorConfig gc;
         gc.U = U;
-        gc.N = I;
+        gc.N = N;
         gc.G = G;
         gc.T = T;
         gc.enable_transfer = enable_transfer;
 
         // 初始化物品-族关联矩阵 h_ig
         // 策略：将物品均匀分配到各个族
-        gc.h_ig.assign(I * G, 0);
-        for (int i = 0; i < I; ++i) {
+        gc.h_ig.assign(N * G, 0);
+        for (int i = 0; i < N; ++i) {
             int assigned_family = i % G;  // 简单策略：物品i分配到族(i % G)
             gc.h_ig[i * G + assigned_family] = 1;
         }
@@ -195,7 +195,7 @@ int main() {
             std::uniform_real_distribution<double> cY_dist(cY_min, cY_max);
             std::uniform_real_distribution<double> cI_dist(cI_min, cI_max);
 
-            gc.cX.assign(I, unit_cX);
+            gc.cX.assign(N, unit_cX);
 
             // cY 按族生成
             for (int g = 0; g < G; ++g) {
@@ -203,17 +203,17 @@ int main() {
             }
 
             // cI 按物品生成
-            for (int i = 0; i < I; ++i) {
+            for (int i = 0; i < N; ++i) {
                 gc.cI.push_back(cI_dist(cost_rng));
             }
         } else {
-            gc.cX.assign(I, unit_cX);
+            gc.cX.assign(N, unit_cX);
             gc.cY.assign(G, unit_cY);  // 注意：按族分配
-            gc.cI.assign(I, unit_cI);
+            gc.cI.assign(N, unit_cI);
         }
 
         // 填充产能占用向量
-        gc.sX.assign(I, unit_sX);
+        gc.sX.assign(N, unit_sX);
         gc.sY.assign(G, unit_sY);  // 注意：按族分配
 
         // 设置默认值
@@ -226,7 +226,7 @@ int main() {
         double estimated_setup_overhead = U * T * G * demand_intensity * unit_sY;
         double available_production_capacity = total_capacity - estimated_setup_overhead;
         double estimated_total_demand = available_production_capacity * capacity_utilization / unit_sX;
-        int estimated_demand_points = static_cast<int>(U * I * T * demand_intensity);
+        int estimated_demand_points = static_cast<int>(U * N * T * demand_intensity);
         double avg_demand = (estimated_demand_points > 0) ?
                            (estimated_total_demand / estimated_demand_points) : 0;
 
@@ -241,7 +241,7 @@ int main() {
         // 构建需求生成配置对象
         DemandGenConfig demand_config;
         demand_config.U = U;
-        demand_config.N = I;
+        demand_config.N = N;
         demand_config.T = T;
         demand_config.default_capacity = default_capacity;
         demand_config.unit_sX = unit_sX;
@@ -257,7 +257,7 @@ int main() {
 
         // 记录配置参数到日志
         logger.log("配置参数：");
-        logger.log("  规模: U=" + std::to_string(U) + ", I=" + std::to_string(I) +
+        logger.log("  规模: U=" + std::to_string(U) + ", N=" + std::to_string(N) +
                    ", G=" + std::to_string(G) + ", T=" + std::to_string(T));
         logger.log("  产能: default=" + std::to_string(default_capacity) +
                    ", sX=" + std::to_string(unit_sX) +
@@ -307,7 +307,7 @@ int main() {
                 for (int v = 0; v < U; ++v) {
                     if (u == v) continue;  // 跳过自己到自己的转运
 
-                    for (int i = 0; i < I; ++i) {
+                    for (int i = 0; i < N; ++i) {
                         for (int t = 0; t < T; ++t) {
                             TransferEntry te;
                             te.u = u;
@@ -334,7 +334,7 @@ int main() {
             double bigM_value = std::max(10000.0, total_demand_sum * 2.0);
 
             int bigM_count = 0;
-            for (int i = 0; i < I; ++i) {
+            for (int i = 0; i < N; ++i) {
                 for (int t = 0; t < T; ++t) {
                     BigMEntry bm;
                     bm.i = i;
