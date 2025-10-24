@@ -18,11 +18,11 @@
  * 使用方法：
  * 1. 在main()函数中配置参数
  * 2. 编译并运行程序
- * 3. 生成的算例保存到 output/ 目录
+ * 3. 生成的算例保存到 output/cases/ 目录
  *
  * 输出格式：
- * - 算例文件: output/case_YYYYMMDD_HHMMSS.csv
- * - 日志文件: output/log_YYYYMMDD_HHMMSS.txt
+ * - 算例文件: output/cases/case_YYYYMMDD_HHMMSS.csv
+ * - 日志文件: output/logs/log_YYYYMMDD_HHMMSS.txt
  *
  * @author      LS-Game-DataGen Team (v2.0)
  * ==================================================================================
@@ -376,17 +376,19 @@ int main() {
         }
 
         std::string output_dir = project_root + "/output";
+        std::string cases_dir = output_dir + "/cases";
 
-        // 确保output目录存在
+        // 确保output和cases目录存在
         #ifdef _WIN32
             system(("if not exist \"" + output_dir + "\" mkdir \"" + output_dir + "\"").c_str());
+            system(("if not exist \"" + cases_dir + "\" mkdir \"" + cases_dir + "\"").c_str());
         #else
-            system(("mkdir -p \"" + output_dir + "\"").c_str());
+            system(("mkdir -p \"" + cases_dir + "\"").c_str());
         #endif
 
-        // 构建文件名
+        // 构建文件名（保存到cases子目录）
         std::ostringstream filename;
-        filename << output_dir << "/case_"
+        filename << cases_dir << "/case_"
                  << std::setfill('0')
                  << std::setw(4) << (tm_now.tm_year + 1900)
                  << std::setw(2) << (tm_now.tm_mon + 1)

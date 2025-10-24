@@ -19,7 +19,7 @@
  *   [YYYY-MM-DD HH:MM:SS] 日志消息内容
  *
  * 文件名格式：
- *   output/log_YYYYMMDD_HHMMSS.txt
+ *   output/logs/log_YYYYMMDD_HHMMSS.txt
  *
  * 使用示例：
  * @code
@@ -180,15 +180,17 @@ public:
         }
         
         std::string output_dir = project_root + "/output";
-        
-        // 确保output目录存在
+        std::string logs_dir = output_dir + "/logs";
+
+        // 确保output和logs目录存在
         #ifdef _WIN32
             system(("if not exist \"" + output_dir + "\" mkdir \"" + output_dir + "\"").c_str());
+            system(("if not exist \"" + logs_dir + "\" mkdir \"" + logs_dir + "\"").c_str());
         #else
-            system(("mkdir -p \"" + output_dir + "\"").c_str());
+            system(("mkdir -p \"" + logs_dir + "\"").c_str());
         #endif
-        
-        log_filename = generateLogFilename(output_dir);
+
+        log_filename = generateLogFilename(logs_dir);
     }
 
     /**
