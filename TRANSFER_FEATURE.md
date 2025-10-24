@@ -8,8 +8,8 @@
 
 ### 1. 转运成本数据 (cT)
 
-- **数据量**: U×(U-1)×I×T 个条目
-  - 对于 U=5, I=300, T=20: 5×4×300×20 = 120,000 条记录
+- **数据量**: U×(U-1)×N×T 个条目
+  - 对于 U=5, N=300, T=20: 5×4×300×20 = 120,000 条记录
 - **格式**: `transfer,cT,u,v,i,t,cost`
   - u: 发货节点
   - v: 收货节点 (u ≠ v)
@@ -19,8 +19,8 @@
 
 ### 2. BigM 约束数据
 
-- **数据量**: I×T 个条目
-  - 对于 I=300, T=20: 6,000 条记录
+- **数据量**: N×T 个条目
+  - 对于 N=300, T=20: 6,000 条记录
 - **格式**: `bigM,M,,,i,t,M_value`
   - i: 物品编号
   - t: 时间段
@@ -37,7 +37,7 @@ if (enable_transfer) {
     for (int u = 0; u < U; ++u) {
         for (int v = 0; v < U; ++v) {
             if (u == v) continue;
-            for (int i = 0; i < I; ++i) {
+            for (int i = 0; i < N; ++i) {
                 for (int t = 0; t < T; ++t) {
                     TransferEntry te;
                     te.u = u; te.v = v; te.i = i; te.t = t;
@@ -50,7 +50,7 @@ if (enable_transfer) {
 
     // 生成BigM数据
     double bigM_value = std::max(10000.0, total_demand_sum * 2.0);
-    for (int i = 0; i < I; ++i) {
+    for (int i = 0; i < N; ++i) {
         for (int t = 0; t < T; ++t) {
             BigMEntry bm;
             bm.i = i; bm.t = t; bm.M = bigM_value;
@@ -82,8 +82,8 @@ if (enable_transfer) {
 
 | 配置 | 基础变量 (x,y,I) | 转运变量 (a) | 总变量数 | 增长倍数 |
 |------|-----------------|-------------|---------|---------|
-| 不启用转运 | U×I×T = 30,000 | 0 | 30,000 | 1× |
-| 启用转运 | 30,000 | U×U×I×T = 150,000 | 180,000 | 6× |
+| 不启用转运 | U×N×T = 30,000 | 0 | 30,000 | 1× |
+| 启用转运 | 30,000 | U×U×N×T = 150,000 | 180,000 | 6× |
 
 ### 求解时间对比
 
@@ -106,7 +106,7 @@ bool enable_transfer = false;  // 禁用转运
 ```
 
 **适用场景**：
-- 大规模算例 (I≥200)
+- 大规模算例 (N≥200)
 - 快速测试和验证
 - 算法开发阶段
 
@@ -115,7 +115,7 @@ bool enable_transfer = false;  // 禁用转运
 在 `src/main.cpp` 中调整规模参数：
 ```cpp
 int U = 3;      // 节点数量: 5 → 3
-int I = 50;     // 物品种类: 300 → 50
+int N = 50;     // 物品种类: 300 → 50
 int T = 10;     // 时间段: 20 → 10
 bool enable_transfer = true;
 ```
@@ -168,10 +168,10 @@ double bigM_value = std::max(10000.0, total_demand_sum * 2.0);
 ls -lh output/case_*.csv
 
 # 检查转运数据
-grep "^transfer," output/case_*.csv | wc -l  # 应该是 U*(U-1)*I*T
+grep "^transfer," output/case_*.csv | wc -l  # 应该是 U*(U-1)*N*T
 
 # 检查BigM数据
-grep "^bigM," output/case_*.csv | wc -l      # 应该是 I*T
+grep "^bigM," output/case_*.csv | wc -l      # 应该是 N*T
 ```
 
 ### 2. 查看日志文件
@@ -205,7 +205,7 @@ BigM值: 166290.050172
 
 **原因**：问题规模太大（启用转运后变量增加6倍）
 **解决**：
-1. 减小规模参数 (U, I, T)
+1. 减小规模参数 (U, N, T)
 2. 增加求解器时间限制
 3. 考虑禁用转运功能
 
@@ -213,6 +213,6 @@ BigM值: 166290.050172
 
 转运功能已完全实现并测试通过。对于大规模算例，建议：
 - 优先使用不启用转运的配置
-- 如需测试转运功能，请将规模减小到 U≤3, I≤100, T≤15
+- 如需测试转运功能，请将规模减小到 U≤3, N≤100, T≤15
 
 这样可以在合理的时间内完成求解并获得有意义的结果。

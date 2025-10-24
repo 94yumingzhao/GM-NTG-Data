@@ -25,7 +25,7 @@
  * @code
  * Logger logger;
  * logger.log("程序启动");
- * logger.log("配置: U=5, I=10, T=20");
+ * logger.log("配置: U=5, N=10, T=20");
  * logger.log("生成完成");
  * logger.saveToFile();  // 保存到文件
  * @endcode

@@ -32,7 +32,7 @@ std::vector<DemandEntry> DemandGenerator::Generate(const DemandGenConfig& config
 
     // 步骤2：计算需要生成的总需求点数
     int total_demand_points = static_cast<int>(
-        config.U * config.I * config.T * config.demand_intensity
+        config.U * config.N * config.T * config.demand_intensity
     );
 
     if (total_demand_points == 0) {
@@ -76,7 +76,7 @@ void DemandGenerator::CalculateAvailableCapacity(
     // 估算每个时段的平均启动次数
     // 假设：每种物品类型每个时段可能启动一次
     // 实际启动次数取决于需求分布
-    double avg_setups_per_period = config.I * config.demand_intensity;
+    double avg_setups_per_period = config.N * config.demand_intensity;
 
     // 每个时段的启动开销
     double setup_overhead = avg_setups_per_period * config.unit_sY;
@@ -221,24 +221,24 @@ void DemandGenerator::GenerateDemandPoints(
     std::uniform_real_distribution<double> amount_dist(min_demand, max_demand);
 
     // 生成带集中度控制的物品权重
-    std::vector<double> item_weights(config.I);
+    std::vector<double> item_weights(config.N);
     if (config.item_concentration == 0.0) {
         // 均匀分布
-        for (int i = 0; i < config.I; ++i) {
-            item_weights[i] = 1.0 / config.I;
+        for (int i = 0; i < config.N; ++i) {
+            item_weights[i] = 1.0 / config.N;
         }
     } else {
         // 集中分布
         std::uniform_real_distribution<double> dist(0.5, 1.5);
         double total = 0.0;
-        for (int i = 0; i < config.I; ++i) {
+        for (int i = 0; i < config.N; ++i) {
             double base_weight = dist(rng);
             double weight = std::pow(base_weight,
                 1.0 + config.item_concentration * 3.0);
             item_weights[i] = weight;
             total += weight;
         }
-        for (int i = 0; i < config.I; ++i) {
+        for (int i = 0; i < config.N; ++i) {
             item_weights[i] /= total;
         }
     }

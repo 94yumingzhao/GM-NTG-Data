@@ -86,7 +86,7 @@ public:
      * @brief 写入一行数据（字符串值）
      *
      * @param section 数据段名称（如"meta", "cost", "demand"等）
-     * @param key     数据键名（如"U", "I", "cX", "Demand"等）
+     * @param key     数据键名（如"U", "N", "cX", "Demand"等）
      * @param u       节点索引u（不适用时传-1）
      * @param v       节点索引v（不适用时传-1）
      * @param i       物品索引i（不适用时传-1）

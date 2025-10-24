@@ -11,8 +11,8 @@
  * 2. CSV生成 (GenerateCsv): 按标准格式生成CSV算例文件
  *
  * 验证内容包括：
- * - 规模参数的合法性（U, I, T必须为正）
- * - 向量长度的一致性（成本和产能占用向量长度必须等于I）
+ * - 规模参数的合法性（U, N, T必须为正）
+ * - 向量长度的一致性（成本和产能占用向量长度必须等于N）
  * - 索引的有效性（所有索引不能越界）
  * - 数值的合理性（成本、产能等必须非负）
  * - 转运配置的完整性（当启用转运时）
@@ -20,7 +20,7 @@
  * CSV输出格式：
  * section,key,u,v,i,t,value
  * - section: 数据段名称（meta/cost/cap_usage/capacity/init/demand/transfer/bigM）
- * - key: 数据键名（如U, I, T, cX, cY等）
+ * - key: 数据键名（如U, N, T, cX, cY等）
  * - u,v,i,t: 索引（不适用时为空）
  * - value: 数据值
  *
@@ -87,9 +87,9 @@ static std::string quad(int a, int b, int c, int d) {
  *
  * @details
  * 验证顺序：
- * 1. 基本规模参数（U, I, T必须为正整数）
- * 2. 成本向量长度（cX, cY, cI长度必须等于I）
- * 3. 产能占用向量长度（sX, sY长度必须等于I）
+ * 1. 基本规模参数（U, N, T必须为正整数）
+ * 2. 成本向量长度（cX, cY, cI长度必须等于N）
+ * 3. 产能占用向量长度（sX, sY长度必须等于N）
  * 4. 默认值合法性（产能和初始库存必须非负）
  * 5. 需求数据索引和值的合法性
  * 6. 产能覆盖数据的合法性
@@ -100,26 +100,26 @@ void CaseGenerator::Validate(const GeneratorConfig& g) {
     // ================================================================================
     // 1. 验证基本规模参数
     // ================================================================================
-    CHECK(g.U > 0 && g.I > 0 && g.G > 0 && g.T > 0, "U/I/G/T 必须为正整数");
+    CHECK(g.U > 0 && g.N > 0 && g.G > 0 && g.T > 0, "U/N/G/T 必须为正整数");
 
     // ================================================================================
     // 2. 验证物品-族关联矩阵
     // ================================================================================
-    CHECK((int)g.h_ig.size() == g.I * g.G, "h_ig 长度必须等于 I*G");
+    CHECK((int)g.h_ig.size() == g.N * g.G, "h_ig 长度必须等于 N*G");
 
     // ================================================================================
     // 3. 验证成本向量长度
     // ================================================================================
     // 注意：cY 现在是按族而非按物品
-    CHECK((int)g.cX.size() == g.I, "cX 长度必须等于 I");
+    CHECK((int)g.cX.size() == g.N, "cX 长度必须等于 N");
     CHECK((int)g.cY.size() == g.G, "cY 长度必须等于 G");
-    CHECK((int)g.cI.size() == g.I, "cI 长度必须等于 I");
+    CHECK((int)g.cI.size() == g.N, "cI 长度必须等于 N");
 
     // ================================================================================
     // 4. 验证产能占用向量长度
     // ================================================================================
     // 注意：sY 现在是按族而非按物品
-    CHECK((int)g.sX.size() == g.I, "sX 长度必须等于 I");
+    CHECK((int)g.sX.size() == g.N, "sX 长度必须等于 N");
     CHECK((int)g.sY.size() == g.G, "sY 长度必须等于 G");
 
     // ================================================================================
@@ -135,7 +135,7 @@ void CaseGenerator::Validate(const GeneratorConfig& g) {
     // 检查每个需求点的索引和值是否合法
     for (const auto& d : g.demand) {
         CHECK(0 <= d.u && d.u < g.U, "Demand.u 越界: u=" + std::to_string(d.u));
-        CHECK(0 <= d.i && d.i < g.I, "Demand.i 越界: i=" + std::to_string(d.i));
+        CHECK(0 <= d.i && d.i < g.N, "Demand.i 越界: i=" + std::to_string(d.i));
         CHECK(0 <= d.t && d.t < g.T, "Demand.t 越界: t=" + std::to_string(d.t));
         CHECK(d.amount >= 0.0, "Demand.amount 需为非负, at " + triple(d.u,d.i,d.t));
     }
@@ -156,7 +156,7 @@ void CaseGenerator::Validate(const GeneratorConfig& g) {
     // 检查每个初始库存覆盖项的索引和值是否合法
     for (const auto& z : g.i0_overrides) {
         CHECK(0 <= z.u && z.u < g.U, "I0.u 越界");
-        CHECK(0 <= z.i && z.i < g.I, "I0.i 越界");
+        CHECK(0 <= z.i && z.i < g.N, "I0.i 越界");
         CHECK(z.value >= 0.0, "I0.value 需为非负");
     }
 
@@ -168,14 +168,14 @@ void CaseGenerator::Validate(const GeneratorConfig& g) {
         for (const auto& e : g.transfer_costs) {
             CHECK(0 <= e.u && e.u < g.U, "cT.u 越界");
             CHECK(0 <= e.v && e.v < g.U, "cT.v 越界");
-            CHECK(0 <= e.i && e.i < g.I, "cT.i 越界");
+            CHECK(0 <= e.i && e.i < g.N, "cT.i 越界");
             CHECK(0 <= e.t && e.t < g.T, "cT.t 越界");
             CHECK(e.cost >= 0.0, "cT.cost 需为非负, at " + quad(e.u,e.v,e.i,e.t));
         }
 
         // 验证BigM约束数据
         for (const auto& m : g.bigM) {
-            CHECK(0 <= m.i && m.i < g.I, "M.i 越界");
+            CHECK(0 <= m.i && m.i < g.N, "M.i 越界");
             CHECK(0 <= m.t && m.t < g.T, "M.t 越界");
             CHECK(m.M > 0.0, "M 值需为正");
         }
@@ -199,7 +199,7 @@ void CaseGenerator::Validate(const GeneratorConfig& g) {
  *
  * 1. meta段 - 元数据
  *    - U: 节点数量
- *    - I: 物品种类数量
+ *    - N: 物品种类数量
  *    - T: 时间周期数量
  *    - enable_transfer: 是否启用转运（0或1）
  *
@@ -241,7 +241,7 @@ void CaseGenerator::GenerateCsv(const GeneratorConfig& g, CsvWriter& w) {
     // 1. 写出 meta 段 - 元数据
     // ================================================================================
     w.writeRow("meta", "U", -1, -1, -1, -1, g.U);
-    w.writeRow("meta", "I", -1, -1, -1, -1, g.I);
+    w.writeRow("meta", "N", -1, -1, -1, -1, g.N);
     w.writeRow("meta", "G", -1, -1, -1, -1, g.G);
     w.writeRow("meta", "T", -1, -1, -1, -1, g.T);
     w.writeRow("meta", "enable_transfer", -1, -1, -1, -1, g.enable_transfer ? 1 : 0);
@@ -252,7 +252,7 @@ void CaseGenerator::GenerateCsv(const GeneratorConfig& g, CsvWriter& w) {
     // 写出 h_ig[i][g] 矩阵（非零元素）
     // CSV格式：family,h_ig,g,-1,i,-1,value
     // 其中 u 字段存储族索引 g，i 字段存储物品索引 i
-    for (int i = 0; i < g.I; ++i) {
+    for (int i = 0; i < g.N; ++i) {
         for (int gg = 0; gg < g.G; ++gg) {
             int val = g.h_ig[i * g.G + gg];
             if (val != 0) {  // 只写出非零元素以节省空间
@@ -266,16 +266,16 @@ void CaseGenerator::GenerateCsv(const GeneratorConfig& g, CsvWriter& w) {
     // ================================================================================
     // cX 和 cI 按物品索引（使用 i 字段）
     // cY 按族索引（使用 u 字段存储族索引）
-    for (int i = 0; i < g.I; ++i) w.writeRow("cost", "cX", -1, -1, i, -1, g.cX[i]);
+    for (int i = 0; i < g.N; ++i) w.writeRow("cost", "cX", -1, -1, i, -1, g.cX[i]);
     for (int gg = 0; gg < g.G; ++gg) w.writeRow("cost", "cY", gg, -1, -1, -1, g.cY[gg]);
-    for (int i = 0; i < g.I; ++i) w.writeRow("cost", "cI", -1, -1, i, -1, g.cI[i]);
+    for (int i = 0; i < g.N; ++i) w.writeRow("cost", "cI", -1, -1, i, -1, g.cI[i]);
 
     // ================================================================================
     // 4. 写出 cap_usage 段 - 产能占用数据
     // ================================================================================
     // sX 按物品索引（使用 i 字段）
     // sY 按族索引（使用 u 字段存储族索引）
-    for (int i = 0; i < g.I; ++i) w.writeRow("cap_usage", "sX", -1, -1, i, -1, g.sX[i]);
+    for (int i = 0; i < g.N; ++i) w.writeRow("cap_usage", "sX", -1, -1, i, -1, g.sX[i]);
     for (int gg = 0; gg < g.G; ++gg) w.writeRow("cap_usage", "sY", gg, -1, -1, -1, g.sY[gg]);
 
     // ================================================================================
@@ -296,7 +296,7 @@ void CaseGenerator::GenerateCsv(const GeneratorConfig& g, CsvWriter& w) {
     // ================================================================================
     // 策略：先写出所有(u,i)的默认值，再写出覆盖项
     for (int u = 0; u < g.U; ++u)
-        for (int i = 0; i < g.I; ++i)
+        for (int i = 0; i < g.N; ++i)
             w.writeRow("init", "I0", u, -1, i, -1, g.default_i0);
 
     // 写出覆盖项（会覆盖上面的默认值）
