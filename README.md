@@ -100,13 +100,13 @@ T,6
 
 | Section | 字段 | 说明 |
 |:--------|:-----|:-----|
-| DIMENSIONS | P, N, G, T | 工厂数、产品数、家族数、周期数 |
+| DIMENSIONS | P, N, G, T | 工厂数、产品数、产品大类数、周期数 |
 | CAPACITY | u, t, value | 工厂 u 在周期 t 的产能上限 |
 | DEMAND | u, i, t, value | 工厂 u 对产品 i 在周期 t 的需求量 |
 | INIT_INVENTORY | u, i, value | 工厂 u 产品 i 的初始库存 |
-| ITEM_FAMILY | i, g | 产品 i 属于家族 g |
+| ITEM_FAMILY | i, g | 产品 i 属于产品大类 g |
 | PRODUCTION | i, cap, cost | 产品 i 的产能消耗和生产成本 |
-| SETUP | g, cap, cost | 家族 g 的换产产能消耗和成本 |
+| SETUP | g, cap, cost | 产品大类 g 的换产产能消耗和成本 |
 | HOLDING | i, cost | 产品 i 的库存持有成本 |
 | TRANSFER | u, v, cost | 从工厂 u 到 v 的单位转运成本 |
 
